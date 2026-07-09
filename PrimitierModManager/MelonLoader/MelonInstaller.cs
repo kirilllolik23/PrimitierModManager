@@ -4,7 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace PrimitierModManager.MelonLoader
 {
@@ -120,7 +120,7 @@ namespace PrimitierModManager.MelonLoader
                 return;
             }
 
-            // Try to verify hash — MelonLoader v0.5.x used .sha512, v0.6+ may not ship them
+            // Try to verify hash
             string hashUrl = $"{MelonLoaderUpdateSourceUri}/{selectedVersion}/MelonLoader.{arch}.sha512";
             try
             {
@@ -143,7 +143,7 @@ namespace PrimitierModManager.MelonLoader
             }
             catch
             {
-                // Hash file not available — skip verification (HTTPS transport is still secure)
+                // Hash file not available — skip verification
             }
 
             Status = "Extracting MelonLoader...";
@@ -242,7 +242,102 @@ namespace PrimitierModManager.MelonLoader
                 return;
             }
 
+            // Pre-cache UnityDependencies so MelonLoader doesn't need to download them at runtime
+            Status = "Caching Unity dependencies...";
+            CacheUnityDependencies(destination);
+
             TempFileCache.ClearCache();
+        }
+
+        public static void CacheUnityDependencies(string gameDir)
+        {
+            // Detect Unity version from UnityPlayer.dll
+            string unityPlayerPath = Path.Combine(gameDir, "UnityPlayer.dll");
+            if (!File.Exists(unityPlayerPath))
+            {
+                Error = "UnityPlayer.dll not found — cannot determine Unity version for dependency caching.";
+                return;
+            }
+
+            string unityVersion = null;
+            try
+            {
+                var versionInfo = FileVersionInfo.GetVersionInfo(unityPlayerPath);
+                string productVersion = versionInfo.ProductVersion;
+                if (!string.IsNullOrEmpty(productVersion))
+                {
+                    // Extract "2022.3.22" from "2022.3.22f1 (887be4894c44)"
+                    var match = Regex.Match(productVersion, @"^(\d+\.\d+\.\d+)");
+                    if (match.Success)
+                        unityVersion = match.Groups[1].Value;
+                }
+            }
+            catch { }
+
+            if (string.IsNullOrEmpty(unityVersion))
+            {
+                Error = "Could not detect Unity version from UnityPlayer.dll";
+                return;
+            }
+
+            string depsDir = Path.Combine(gameDir, "MelonLoader", "Dependencies", "Il2CppAssemblyGenerator");
+            string depsFile = Path.Combine(depsDir, $"UnityDependencies_{unityVersion}.zip");
+
+            // If already cached, update config and return
+            if (File.Exists(depsFile))
+            {
+                UpdateConfigCfg(depsDir, unityVersion);
+                return;
+            }
+
+            // Try to download from primary source
+            string downloadUrl = $"https://github.com/LavaGang/Unity-Runtime-Libraries/raw/master/{unityVersion}.zip";
+            bool downloaded = false;
+
+            try
+            {
+                Directory.CreateDirectory(depsDir);
+                Status = $"Downloading Unity dependencies ({unityVersion})...";
+                var response = s_httpClient.GetAsync(downloadUrl).GetAwaiter().GetResult();
+                response.EnsureSuccessStatusCode();
+                var fileBytes = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
+                File.WriteAllBytes(depsFile, fileBytes);
+                downloaded = true;
+            }
+            catch (Exception ex)
+            {
+                // Download failed — provide manual instructions
+                Error = $"Could not download Unity dependencies automatically ({ex.Message}).\n\n" +
+                        $"Manual fix:\n" +
+                        $"1. Download '{unityVersion}.zip' from:\n" +
+                        $"   {downloadUrl}\n" +
+                        $"2. Place it in:\n" +
+                        $"   {depsDir}\n" +
+                        $"   as 'UnityDependencies_{unityVersion}.zip'\n" +
+                        $"3. Launch the game again.";
+            }
+
+            if (downloaded)
+                UpdateConfigCfg(depsDir, unityVersion);
+        }
+
+        private static void UpdateConfigCfg(string depsDir, string unityVersion)
+        {
+            string configPath = Path.Combine(depsDir, "Config.cfg");
+            try
+            {
+                string[] lines = File.ReadAllLines(configPath);
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    if (lines[i].StartsWith("UnityVersion"))
+                    {
+                        lines[i] = $"UnityVersion = \"{unityVersion}.0\"";
+                        break;
+                    }
+                }
+                File.WriteAllLines(configPath, lines);
+            }
+            catch { }
         }
 
         private static bool GetExistingProxyPath(string destination, out string proxyPath)

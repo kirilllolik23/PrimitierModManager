@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using PrimitierModManager.MelonLoader;
 
 namespace PrimitierModManager
 {
@@ -45,7 +46,8 @@ namespace PrimitierModManager
 				LogManager.FlushCollector(collector);
 			}
 
-			
+			// Pre-cache Unity dependencies so MelonLoader doesn't fail at runtime
+			MelonInstaller.CacheUnityDependencies(ConfigFile.Config.PrimitierInstallPath);
 
 			Process.Start(Path.Combine(ConfigFile.Config.PrimitierInstallPath, "Primitier.exe"));
 
