@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+		<PMMAuthors>XGames105</PMMAuthors>
+		<PMMVersion>2.0.0</PMMVersion>
+    </PropertyGroup>
+	
+	
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\Images\Icon.ico</ApplicationIcon>
+   
+    <Company>$(PMMAuthors)</Company>
+    <Authors>$(PMMAuthors)</Authors>
+	<AssemblyVersion>$(PMMVersion)</AssemblyVersion>
+	<FileVersion>$(PMMVersion)</FileVersion>
+    <Version>$(PMMVersion)</Version>
+	<AssemblyName>PrimitierModManager</AssemblyName>
+	  
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MaterialDesignThemes" Version="5.2.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Octokit" Version="14.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Commands\**" />
+    <EmbeddedResource Remove="Commands\**" />
+    <None Remove="Commands\**" />
+    <Page Remove="Commands\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\Images\Icon.ico" />
+  </ItemGroup>
+
+	
+</Project>

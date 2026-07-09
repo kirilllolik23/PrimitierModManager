@@ -1,0 +1,72 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths-ignore:
+      - '**.md'
+      - '**.gitignore'
+  pull_request:
+    branches: [ "main", "master" ]
+  release:
+    types: [ published ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore PrimitierModManager.sln
+
+    - name: Build
+      run: dotnet build PrimitierModManager.sln --configuration Release --no-restore
+
+    - name: Publish
+      run: |
+        dotnet publish PrimitierModManager\PrimitierModManager.csproj `
+          --configuration Release `
+          --runtime win-x64 `
+          --self-contained false `
+          --output publish
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PrimitierModManager-win-x64
+        path: publish/
+        if-no-files-found: error
+
+  release:
+    needs: build
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download build artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: PrimitierModManager-win-x64
+        path: PrimitierModManager-win-x64
+
+    - name: Create zip archive
+      run: |
+        cd PrimitierModManager-win-x64
+        zip -r ../PrimitierModManager-${{ github.event.release.tag_name }}-win-x64.zip .
+
+    - name: Upload release asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./PrimitierModManager-${{ github.event.release.tag_name }}-win-x64.zip
+        asset_name: PrimitierModManager-${{ github.event.release.tag_name }}-win-x64.zip
+        asset_content_type: application/zip
