@@ -70,7 +70,7 @@ namespace PrimitierModManager
 			MelonInstallError = "";
 
 
-			MelonInstaller.Install(Path.GetDirectoryName(primitierExePath), MelonLoaderVersions.V0_7_2, false, false);
+			MelonInstaller.Install(Path.GetDirectoryName(primitierExePath), MelonLoaderVersions.V0_6_6, false, false);
 			if (!showPopup)
 			{
 				MelonInstallError = MelonInstaller.Error;

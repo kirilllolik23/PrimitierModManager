@@ -10,13 +10,34 @@ using System.Diagnostics;
 
 namespace PrimitierModManager
 {
-	/// <summary>
-	/// Interaction logic for App.xaml
-	/// </summary>
 	public partial class App : Application
 	{
 		public static MainWindow MainWindow = null;
-		
+
+		public App()
+		{
+			AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+			{
+				var ex = args.ExceptionObject as Exception;
+				try
+				{
+					File.WriteAllText("PrimitierModManager_crash.log", $"Unhandled exception: {ex?.ToString() ?? "Unknown"}{Environment.NewLine}Args: {string.Join(" ", Environment.GetCommandLineArgs())}");
+				}
+				catch { }
+				MessageBox.Show($"Fatal error: {ex?.Message ?? "Unknown"}\n\nCrash log saved to PrimitierModManager_crash.log", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			};
+
+			DispatcherUnhandledException += (sender, args) =>
+			{
+				try
+				{
+					File.WriteAllText("PrimitierModManager_crash.log", $"Dispatcher exception: {args.Exception}{Environment.NewLine}Args: {string.Join(" ", Environment.GetCommandLineArgs())}");
+				}
+				catch { }
+				args.Handled = true;
+				MessageBox.Show($"UI error: {args.Exception.Message}\n\nCrash log saved to PrimitierModManager_crash.log", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+			};
+		}
 
 		private void Application_Startup(object sender, StartupEventArgs e)
 		{
@@ -73,6 +94,7 @@ namespace PrimitierModManager
 			if (ConfigFile.Config != null)
 			{
 				ConfigFile.Save();
+
 			}
 
 

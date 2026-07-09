@@ -11,6 +11,7 @@ namespace PrimitierModManager.MelonLoader
     public static class MelonLoaderVersions
     {
         public static readonly string V0_5_3 = "v0.5.3";
+        public static readonly string V0_6_6 = "v0.6.6";
         public static readonly string V0_7_2 = "v0.7.2";
     }
 

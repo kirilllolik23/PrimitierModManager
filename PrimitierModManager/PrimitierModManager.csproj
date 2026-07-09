@@ -23,9 +23,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MaterialDesignThemes" Version="5.2.0" />
+    <PackageReference Include="MaterialDesignThemes" Version="4.9.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="Octokit" Version="14.0.0" />
+    <PackageReference Include="Octokit" Version="0.52.0" />
   </ItemGroup>
 
   <ItemGroup>
